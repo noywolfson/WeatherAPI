@@ -12,13 +12,13 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
-const maxRetries = 5
-
 func main() {
-	pgDB := initDB()
+	pgDB, err := initDB()
+	if err != nil {
+		log.Fatal(err)
+	}
 	defer pgDB.Close()
 
 	weatherForecast := initWeatherForecast(pgDB)
@@ -38,31 +38,24 @@ func initWeatherForecast(db *sql.DB) definition.IWeatherForecast {
 	return core.NewPgWeatherForecast(db)
 }
 
-func initDB() *sql.DB {
+func initDB() (*sql.DB, error) {
 	pgInfo := fmt.Sprintf("host=%s port=%s user=%s "+"password=%s dbname=%s sslmode=disable",
 		config.Static.PGHost, config.Static.PGPort, config.Static.PGUser, config.Static.PGPassword, config.Static.DbName)
-	for retries := 0; retries < maxRetries; retries++ {
-		db, err := sql.Open("postgres", pgInfo)
-		if err != nil {
-			log.Printf("Failed to connect to PostgreSQL: %v. Retrying...", err)
-			time.Sleep(time.Second * 2) // Wait few seconds before retrying
-			continue
-		}
 
-		err = db.Ping()
-		if err != nil {
-			log.Printf("Failed to ping PostgreSQL: %v. Retrying...", err)
-			time.Sleep(time.Second * 2) // Wait few seconds before retrying
-			continue
-		}
-
-		log.Println("Successfully connected to PostgreSQL!")
-		return db
+	db, err := sql.Open("postgres", pgInfo)
+	if err != nil {
+		log.Printf("Failed to connect to PostgreSQL: %v", err)
+		return nil, err
 	}
 
-	log.Println("Maximum retries exceeded. Unable to connect to PostgreSQL.")
-	os.Exit(1)
-	return nil
+	err = db.Ping()
+	if err != nil {
+		log.Printf("Failed to ping PostgreSQL: %v", err)
+		return nil, err
+	}
+
+	log.Println("Successfully connected to PostgreSQL!")
+	return db, nil
 }
 
 func shutDown(db *sql.DB) {
