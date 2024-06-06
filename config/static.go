@@ -6,7 +6,7 @@ import (
 )
 
 var Static = struct {
-	HTTPServerPort string `env:"HTTP_SERVER_PORT" envDefault:"8080"`
+	HTTPServerPort string `env:"HTTP_SERVER_PORT" envDefault:":8080"`
 	PGHost         string `env:"DB_HOST" envDefault:"dpg-cpg1rav79t8c73ec0ol0-a"`
 	PGPort         string `env:"DB_PORT" envDefault:"5432"`
 	PGUser         string `env:"DB_USER" envDefault:"weatheruser"`
